@@ -1,0 +1,60 @@
+name: Smart Engine
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: Engine mode
+        required: true
+        default: refresh
+        type: choice
+        options:
+          - refresh
+          - discovery
+          - catalog
+          - maintenance
+      market:
+        description: eBay market
+        required: true
+        default: US
+        type: choice
+        options:
+          - US
+          - GB
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: cardpricelab-smart-engine-manual
+  cancel-in-progress: false
+
+jobs:
+  tick:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Request GitHub OIDC token
+        id: oidc
+        shell: bash
+        run: |
+          response=$(curl --fail --silent --show-error \
+            -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
+            "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=cardpricelab-smart-engine")
+          token=$(jq -r '.value' <<< "$response")
+          test -n "$token" && test "$token" != "null"
+          echo "token=$token" >> "$GITHUB_OUTPUT"
+          echo "::add-mask::$token"
+
+      - name: Run Smart Engine tick
+        shell: bash
+        env:
+          OIDC_TOKEN: ${{ steps.oidc.outputs.token }}
+          ENGINE_MODE: ${{ inputs.mode }}
+          ENGINE_MARKET: ${{ inputs.market }}
+        run: |
+          curl --fail --silent --show-error \
+            --max-time 70 \
+            -H "Authorization: Bearer $OIDC_TOKEN" \
+            "https://cardpricelab.com/api/cron/ebay-ingestion?mode=$ENGINE_MODE&market=$ENGINE_MARKET"
