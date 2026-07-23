@@ -2,14 +2,15 @@ name: Smart Engine
 
 on:
   schedule:
-    # Cost-controlled cadence: 42 clustered runs/day instead of 137.
-    # US discovery remains at 12 runs/day (~2,150 new listings/day at the measured yield).
-    - cron: "2 * * * *"
-    - cron: "5 */2 * * *"
-    - cron: "5 5,17 * * *"
-    - cron: "8 5,17 * * *"
-    - cron: "8 4 * * *"
-    - cron: "11 4 * * *"
+    # Cost-controlled cadence: 66 clustered runs/day instead of 137.
+    # Two adjacent US refresh batches/hour clear freshness backlog without extra wake windows.
+    - cron: "17 * * * *"
+    - cron: "20 * * * *"
+    - cron: "23 */2 * * *"
+    - cron: "23 5,17 * * *"
+    - cron: "26 5,17 * * *"
+    - cron: "26 4 * * *"
+    - cron: "29 4 * * *"
   workflow_dispatch:
     inputs:
       mode:
@@ -57,19 +58,19 @@ jobs:
           if [[ "$EVENT_NAME" == "workflow_dispatch" ]]; then
             mode="$MANUAL_MODE"
             market="$MANUAL_MARKET"
-          elif [[ "$EVENT_SCHEDULE" == "2 * * * *" ]]; then
+          elif [[ "$EVENT_SCHEDULE" == "17 * * * *" || "$EVENT_SCHEDULE" == "20 * * * *" ]]; then
             mode="refresh"
-          elif [[ "$EVENT_SCHEDULE" == "5 */2 * * *" ]]; then
+          elif [[ "$EVENT_SCHEDULE" == "23 */2 * * *" ]]; then
             mode="discovery"
-          elif [[ "$EVENT_SCHEDULE" == "5 5,17 * * *" ]]; then
+          elif [[ "$EVENT_SCHEDULE" == "23 5,17 * * *" ]]; then
             mode="refresh"
             market="GB"
-          elif [[ "$EVENT_SCHEDULE" == "8 5,17 * * *" ]]; then
+          elif [[ "$EVENT_SCHEDULE" == "26 5,17 * * *" ]]; then
             mode="discovery"
             market="GB"
-          elif [[ "$EVENT_SCHEDULE" == "8 4 * * *" ]]; then
+          elif [[ "$EVENT_SCHEDULE" == "26 4 * * *" ]]; then
             mode="catalog"
-          elif [[ "$EVENT_SCHEDULE" == "11 4 * * *" ]]; then
+          elif [[ "$EVENT_SCHEDULE" == "29 4 * * *" ]]; then
             mode="maintenance"
           else
             mode="maintenance"
